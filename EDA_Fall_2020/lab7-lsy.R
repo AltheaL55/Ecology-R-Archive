@@ -51,7 +51,7 @@ data2$c5 <- dat$covtot98
 data2$abio <- dat$abio
 data2$fire <- dat$fireint1
 
-#acoording to Fig 5.10 & 5.11 in the original article, r1¨Cr5 with time-varying covariates and c1-c5, as well as time-invariant covariate, abio (abiotic conditions) are included in the model.
+#acoording to Fig 5.10 & 5.11 in the original article, r1Â¨Cr5 with time-varying covariates and c1-c5, as well as time-invariant covariate, abio (abiotic conditions) are included in the model.
 fmodel1 <- '
 #intercept and slope with fixed coefficients
 i =~ 1*r1 +1*r2 +1*r3 +1*r4 +1*r5
