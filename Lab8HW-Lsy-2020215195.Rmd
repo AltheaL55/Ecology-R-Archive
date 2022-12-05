@@ -1,0 +1,350 @@
+---
+title: "Lab8HW"
+author: "Lsy"
+date: "2020/11/6"
+output: word_document
+---
+
+```{r setup, warning=FALSE}
+setwd("D:/ELsy/2020fall/EDA/8/Labnotes/Excercisedata")
+library(ade4)
+library(vegan)
+library(gclus)
+library(cluster)
+library(RColorBrewer)
+library(labdsv)
+library(ape)
+library(MASS)
+library(ellipse)
+source("hcoplot.R")
+source("test.a.R")
+source("coldiss.R")
+```
+Read data
+```{r}
+clmt <- read.csv("All38climate.csv", row.names=1)
+info <- read.csv("All38cityinfo.csv", row.names=1)
+abun <- read.csv("All38abun11m.csv", row.names=1)
+```
+# 1. Clustering analysis
+use species abundance forclustering first
+```{R, warning=FALSE}
+# Compute matrix of chord distance among sites 
+abun.norm <- decostand(abun, "normalize")
+abun.ch <- vegdist(abun.norm, "euc")
+
+# Single linkage agglomerative clustering
+abun.ch.single <- hclust(abun.ch, method="single")
+# Plot a dendrogram using the default options
+plot(abun.ch.single)
+
+# Compute complete-linkage agglomerative clustering
+abun.ch.complete <- hclust(abun.ch, method="complete")
+plot(abun.ch.complete)
+
+# Compute UPGMA agglomerative clustering
+abun.ch.UPGMA <- hclust(abun.ch, method="average")
+plot(abun.ch.UPGMA)
+
+# Compute Ward's minimum variance clustering
+abun.ch.ward <- hclust(abun.ch, method="ward.D")
+plot(abun.ch.ward)
+
+# Square-root transformation of the height, make the display of Ward clustering
+# better
+abun.ch.ward$height <- sqrt(abun.ch.ward$height)
+plot(abun.ch.ward)
+
+```
+
+
+## Cophenetic correlations
+
+ *Higher values of cophenetic correlation* represent better clustering model.
+
+```{r,eval=FALSE, warning=FALSE}
+# Single linkage clustering
+abun.ch.single.coph <- cophenetic(abun.ch.single)
+cor(abun.ch, abun.ch.single.coph)
+
+# Complete linkage clustering
+abun.ch.comp.coph <- cophenetic(abun.ch.complete)
+cor(abun.ch, abun.ch.comp.coph)
+
+# Average clustering
+abun.ch.UPGMA.coph <- cophenetic(abun.ch.UPGMA)
+cor(abun.ch, abun.ch.UPGMA.coph)
+
+# Ward clustering
+abun.ch.ward.coph <- cophenetic(abun.ch.ward)
+cor(abun.ch, abun.ch.ward.coph)
+```
+Average clustering fit the best.
+
+## Interpretable Clusters
+Find out how many groups that the dendrogram should be cut into.
+```{r,eval=FALSE}
+# Plot average silhouette widths (using Ward clustering) for all partitions 
+# except for the trivial partition in a single group (k=1)
+# First, create an empty vector in which the asw values will be written
+asw <- numeric(nrow(abun))
+for (k in 2:(nrow(abun)-1)) {
+	sil <- silhouette(cutree(abun.ch.ward, k=k), abun.ch)
+	asw[k] <- summary(sil)$avg.width
+	}
+k.best <- which.max(asw)
+
+plot(1:nrow(abun), asw, type="h", 
+	main="Silhouette-optimal number of clusters, Ward", 
+	xlab="k (number of groups)", ylab="Average silhouette width")
+axis(1, k.best, paste("optimum",k.best,sep="\n"), col="red", font=2,
+	col.axis="red")
+points(k.best, max(asw), pch=16, col="red", cex=1.5)
+cat("", "Silhouette-optimal number of clusters k =", k.best, "\n", 
+	"with an average silhouette width of", max(asw), "\n")
+```
+
+Optimal number of clusters k = 5, average silhouette width is 0.1611972.
+Thus use *hcplot* to show final cluster result.
+
+```{R}
+hcoplot(abun.ch.ward, abun.ch, k=5)
+```
+
+```{r,eval=FALSE}
+# k-means partitioning, 2 to 10 groups
+abun.KM.cascade <- cascadeKM(abun.norm, inf.gr=2, sup.gr=10, iter=100, 
+	criterion="ssi")
+summary(abun.KM.cascade)
+```
+
+Find the *minimum* total error sum of squares (*SSE*) and *maximize* simple structure index (*SSI*), see help file of *clustIndex ()* in the package *cclust* for details
+```{r,eval=FALSE}
+abun.KM.cascade$results
+abun.KM.cascade$partition
+plot(abun.KM.cascade, sortg=TRUE)
+```
+min(SSE)&max(SSI)=6 groups
+
+plot again as 6 groups.
+```{R}
+hcoplot(abun.ch.ward, abun.ch, k=6)
+```
+
+```{R, warning=FALSE}
+# Compute matrix of chord distance among sites 
+info.norm <- decostand(info, "normalize")
+info.ch <- vegdist(info.norm, "euc")
+
+# Single linkage agglomerative clustering
+info.ch.single <- hclust(info.ch, method="single")
+# Plot a dendrogram using the default options
+plot(info.ch.single)
+
+# Compute complete-linkage agglomerative clustering
+info.ch.complete <- hclust(info.ch, method="complete")
+plot(info.ch.complete)
+
+# Compute UPGMA agglomerative clustering
+info.ch.UPGMA <- hclust(info.ch, method="average")
+plot(info.ch.UPGMA)
+
+# Compute Ward's minimum variance clustering
+info.ch.ward <- hclust(info.ch, method="ward.D")
+plot(info.ch.ward)
+
+# Square-root transformation of the height, make the display of Ward clustering
+# better
+info.ch.ward$height <- sqrt(info.ch.ward$height)
+plot(info.ch.ward)
+
+```
+
+
+## Cophenetic correlations
+
+ *Higher values of cophenetic correlation* represent better clustering model.
+
+```{r,eval=FALSE, warning=FALSE}
+# Single linkage clustering
+info.ch.single.coph <- cophenetic(info.ch.single)
+cor(info.ch, info.ch.single.coph)
+
+# Complete linkage clustering
+info.ch.comp.coph <- cophenetic(info.ch.complete)
+cor(info.ch, info.ch.comp.coph)
+
+# Average clustering
+info.ch.UPGMA.coph <- cophenetic(info.ch.UPGMA)
+cor(info.ch, info.ch.UPGMA.coph)
+
+# Ward clustering
+info.ch.ward.coph <- cophenetic(info.ch.ward)
+cor(info.ch, info.ch.ward.coph)
+```
+Single linkage clustering fit the best.
+
+## Interpretable Clusters
+Find out how many groups that the dendrogram should be cut into.
+```{r,eval=FALSE}
+# Plot average silhouette widths (using Ward clustering) for all partitions 
+# except for the trivial partition in a single group (k=1)
+# First, create an empty vector in which the asw values will be written
+asw <- numeric(nrow(info))
+for (k in 2:(nrow(info)-1)) {
+	sil <- silhouette(cutree(info.ch.ward, k=k), info.ch)
+	asw[k] <- summary(sil)$avg.width
+	}
+k.best <- which.max(asw)
+
+plot(1:nrow(info), asw, type="h", 
+	main="Silhouette-optimal number of clusters, Ward", 
+	xlab="k (number of groups)", ylab="Average silhouette width")
+axis(1, k.best, paste("optimum",k.best,sep="\n"), col="red", font=2,
+	col.axis="red")
+points(k.best, max(asw), pch=16, col="red", cex=1.5)
+cat("", "Silhouette-optimal number of clusters k =", k.best, "\n", 
+	"with an average silhouette width of", max(asw), "\n")
+```
+
+Optimal number of clusters k =2, average silhouette width is 0.7676347 
+Thus use *hcplot* to show final cluster result.
+
+```{R}
+hcoplot(info.ch.ward, info.ch, k=2)
+```
+
+```{r,eval=FALSE}
+# k-means partitioning, 2 to 10 groups
+info.KM.cascade <- cascadeKM(info.norm, inf.gr=2, sup.gr=10, iter=100, 
+	criterion="ssi")
+summary(info.KM.cascade)
+```
+
+Find the *minimum* total error sum of squares (*SSE*) and *maximize* simple structure index (*SSI*), see help file of *clustIndex ()* in the package *cclust* for details
+```{r,eval=FALSE}
+info.KM.cascade$results
+info.KM.cascade$partition
+plot(info.KM.cascade, sortg=TRUE)
+```
+min(SSE)&max(SSI)=10 groups
+
+plot again as 10 groups.
+```{R}
+hcoplot(info.ch.ward, info.ch, k=10)
+```
+
+# PCA analysis
+```{R}
+source("evplot.R")
+source("cleanplot.pca.R")
+source("PCA.R")
+```
+```{R}
+clmt.pca <- rda(clmt, scale=TRUE)
+clmt.pca
+# Eigenvalues
+(clm <- clmt.pca$CA$eig)
+
+```
+Choose how many princinple components to keep. Apply Kaiser-Guttman criterion to select axes. Computing the mean of all:
+```{r,clmal=F}
+# eigclmtalues and interpreting only the axes whose eigclmtalues are larger
+# than that mean
+clm[clm > mean(clm)]
+
+# Broken stick model. One interprets only the axes whose eigclmtalues are 
+# larger than the length of the corresponding piece of the stick.
+n <- length(clm)
+bsm <- data.frame(j=seq(1:n), p=0)
+bsm$p[1] <- 1/n
+for (i in 2:n)
+{
+	bsm$p[i] = bsm$p[i-1] + (1/(n + 1 - i))
+}
+bsm$p <- 100*bsm$p/n
+bsm
+
+# Plot eigclmtalues and % of variance for each axis
+barplot(clm, main="Eigclmtalues", col="bisque", las=2)
+abline(h=mean(clm), col="red")		# average eigclmtalue
+legend("topright", "Average eigclmtalue", lwd=1, col=2, bty="n")
+barplot(t(cbind(100*clm/sum(clm),bsm$p[n:1])), beside=TRUE, 
+	main="% variance", col=c("bisque",2), las=2)
+legend("topright", c("% eigclmtalue", "Broken stick model"), 
+	pch=15, col=c("bisque",2), bty="n")
+```
+Two axes are enough.
+
+Two PCA biplots: scaling 1 and scaling 2 using cleanplot.pca
+View Loading of six bioclimatic variables on the principle components
+```{r,eval=F}
+cleanplot.pca(clmt.pca, point=TRUE)	
+scores(clmt.pca, choices = 1:2, display = "species", scaling = 0)
+
+```
+# RDA analysis
+
+Get variance represented by residual axes.
+Then analyse the importance of components.
+```{R}
+library(adespatial)
+ctinfo <- cbind(clmt,info)
+# Create subsets of explanatory variables as climate/geogrphic/anthropogenic
+# Geogrphic
+ctinfotopo <- ctinfo[, c(8:10)]
+# Climate
+ctinfoclmt <- ctinfo[, c(1:6)]
+# Anthropogenic
+ctinfoanthro <- ctinfo[, c(7,11)]
+
+# Hellinger-transform the abuncies dataset
+abun.hel <- decostand(abun, "hellinger")
+
+
+(abun.rda <- rda(abun.hel ~ ., ctinfo))
+summary(abun.rda)	# Scaling 2
+
+# Canonical coefficients 
+coef(abun.rda)
+# Unadjusted R^2 
+(R2 <- RsquareAdj(abun.rda)$r.squared)
+# Adjusted R^2 
+(R2adj <- RsquareAdj(abun.rda)$adj.r.squared)
+
+(abun.physio <- rda(abun.hel, ctinfoclmt, ctinfotopo))
+head(summary(abun.physio),3)
+```
+
+
+Plot
+```{R}
+# scaling 1
+plot(abun.rda, scaling=1, 
+	main="Triplot RDA abun.hel ~ ctinfo - scaling 1 - wa scores")
+abun.sc <- scores(abun.rda, choices=1:2, scaling=1, display="sp")
+arrows(0, 0, abun.sc[, 1], abun.sc[, 2], length=0, lty=1, col="red")
+
+# Scaling 2
+plot(abun.rda, main="Triplot RDA abun.hel ~ ctinfo - scaling 2 - wa scores")
+abun2.sc <- scores(abun.rda, choices=1:2, display="sp")
+arrows(0, 0, abun2.sc[, 1], abun2.sc[, 2], length=0, lty=1, col="red")
+```
+
+Forward selection of explanatory variables
+```{R}
+
+# RDA with all explanatory variables
+abun.rda.all <- rda(abun.hel ~ ., data=ctinfo)
+# Global adjusted R^2
+(R2a.all <- RsquareAdj(abun.rda.all)$adj.r.squared)
+
+step.forward <- ordistep(rda(abun.hel ~ 1, data=ctinfo), trace = F, 
+	scope=formula(abun.rda.all ), direction="forward", pstep=1000)
+
+step.forward <- ordiR2step(rda(abun.hel ~ 1, data=ctinfo), trace = F,
+	scope=formula(abun.rda.all ), direction="forward", pstep=1000)
+vif.cca(abun.rda.all)
+
+```
+Annual_T;Season_T;Annual_P;Season_P;Coldestmonth_T;Driestperiod_P(VIF>4), may need further investigation.

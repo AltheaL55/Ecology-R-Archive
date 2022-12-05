@@ -1,0 +1,110 @@
+---
+title: "HW6-Lsy-2020215195"
+author: "Lsy"
+date: "2020/10/24"
+output: word_document
+---
+# HW6
+```{r, warning=FALSE}
+#Try initial model(with all)
+library(sem)
+#read data (use 2014 for example)
+datac14 <- read.csv("D:/ELsy/2020fall/EDA/6/Lect6homeworknew/1-s2.0-S026974911732105X-mmc2-2014csv.csv", header = T)
+newc14<-as.matrix(datac14)
+#turn to correlation matrix
+newc14 <- cor(newc14)
+
+#specify model arguments
+model.jp<-specifyModel(text = "
+urban->Area_C,NA,1
+urban->Pop,lam12,NA
+industy->GDP_S,NA,1
+industy->Elc_I,lam22,NA
+activity->Civi_V,NA,1
+activity->Elc_H,lam31,NA
+activity->God_S,lam32,NA
+activity->Area_H,lam34,NA
+PM_2.5->Nonatt_D,NA,1
+PM_2.5->Annual_M,lam42,NA
+PM_2.5->Heavy_D,lam43,NA
+industy->PM_2.5,NA,1
+activity->PM_2.5,NA,1
+urban->activity,gam3,NA
+industy->urban,gam4,NA
+Nonatt_D<->Nonatt_D,the1,NA
+Annual_M<->Annual_M,the2,NA
+Heavy_D<->Heavy_D,the3,NA
+Pop<->Pop,the11,NA
+Area_C<->Area_C,the12,NA
+GDP_S<->GDP_S,the21,NA
+Elc_I<->Elc_I,the22,NA
+Elc_H<->Elc_H,the31,NA
+Civi_V<->Civi_V,the32,NA
+God_S<->God_S,the33,NA
+Area_H<->Area_H,the34,NA
+PM_2.5<->PM_2.5,thd2,NA
+urban<->urban,thd3,NA
+industy<->industy,thd4,NA
+activity<->activity,thd5,NA
+")
+
+#fitting results
+sem.jp.1<-sem(model.jp,newc14,N=135)
+summary(sem.jp.1,fit.indices=c("GFI", "AGFI", "RMSEA", "NFI", "NNFI", "CFI", "RNI","IFI", "SRMR", "AIC", "AICc", "BIC", "CAIC"))
+standardizedCoefficients(sem.jp.1)
+```
+
+Now, it's time for model modification.
+According to the essay, reaserachers tried models B-H with "household electricity consumption (Elc_I)" , "urban heated area(Area_H)", "total retail sales of consumer goods(God_S)", "civilian vehicles(Civi_V)", "annual mean concentrations of PM2.5(Annual_M)", "PM2.5 nonattainment days(Nonatt_D)" and "heavy PM2.5 pollution days(Heavy_D)" removed respectively. 
+And use these models fit 2014, 2015 & 2015(only include 2014's cities) one by one. 
+Here I just reproduce several models fitting 2014's data as representation.
+
+
+```{R, warning = FALSE}
+#model B(without electricity consumption): 
+#set new arguments
+
+model.jpn<-specifyModel(text = "
+urban->Area_C,NA,1
+urban->Pop,lam12,NA
+industy->GDP_S,NA,1
+industy->Elc_I,lam22,NA
+activity->Civi_V,NA,1
+activity->Elc_H,lam31,NA
+activity->God_S,lam32,NA
+PM_2.5->Nonatt_D,NA,1
+PM_2.5->Annual_M,lam42,NA
+PM_2.5->Heavy_D,lam43,NA
+industy->PM_2.5,NA,1
+activity->PM_2.5,NA,1
+urban->activity,gam3,NA
+industy->urban,gam4,NA
+Nonatt_D<->Nonatt_D,the1,NA
+Annual_M<->Annual_M,the2,NA
+Heavy_D<->Heavy_D,the3,NA
+Pop<->Pop,the11,NA
+Area_C<->Area_C,the12,NA
+GDP_S<->GDP_S,the21,NA
+Elc_I<->Elc_I,the22,NA
+Elc_H<->Elc_H,the31,NA
+Civi_V<->Civi_V,the32,NA
+God_S<->God_S,the33,NA
+PM_2.5<->PM_2.5,thd2,NA
+urban<->urban,thd3,NA
+industy<->industy,thd4,NA
+activity<->activity,thd5,NA")
+
+#summary results
+sem.jp.2<-sem(model.jpn,newc14,N=135)
+summary(sem.jp.2,fit.indices=c("GFI", "AGFI", "RMSEA", "NFI", "NNFI", "CFI", "RNI","IFI", "SRMR", "AIC", "AICc", "BIC", "CAIC"))
+standardizedCoefficients(sem.jp.2)
+```
+Chisquare of model B (351.1071   Df =  33) is lower than the initial model's (389.2924   Df =  42).
+Model B also shows smaller AIC(395) than the initial one(437), indicating the better performance of the model.
+The goodness-of-fit index(GFI = 0.7146339) of this model is close to the initial one (0.7158076).
+Also, according to the final table in the essay, ModelB seems to the best fit for 2014's data.
+
+
+**Question** 
+1. for model D(without "God_S") I tried shows warning like "singular Hessian: model is probably underidentified.". But actually I've done nothing than deleting the arguments in specifyModel, just like what have been done for ModelB. Is there any other procedure should be done for other models before fitting?
+2. As the Table S2 in the essay shows, some of the models fit 2015's data better than 2014's in the view of GFI, but have larger AIC. In this case which model should be thefirst choice when fitting  or predicting other year's data?

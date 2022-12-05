@@ -1,0 +1,130 @@
+---
+title: "HW4"
+author: "Lsy"
+date: "2020/10/9"
+output: html_document
+---
+## set up
+```{R, warning=FALSE}
+
+library(R2jags)
+library(mcmcplots)
+library(superdiag)
+```
+## E.g. Publish chance of your paper
+```{r}
+# read in data
+n <- 10 # number of submitted paper
+y <- 3 # number of accepted paper
+
+# we first set a very flat prior
+a <- 1 #prior parameter values for beta distribution
+b <- 1 #prior parameter values for beta distribution
+
+# we assume the acceptance rate is between 0 and 1
+theta <- seq(0,1,length=100) # expected acceptance rate
+
+# this is your prior, likelihood, posterior
+prior <- dbeta(theta,a,b) # prior informaiton
+like <- (n + 1)*dbinom(y,n,theta) # likelihood,observed from data, p(y)=1/(n+1)[see p64-67 Mr.Shen's Bayes textbook]
+post <- dbeta(theta,y+a,n-y+b) # posterior
+
+# let's plot your results
+plot(theta,post,type='l') # plot posterior as a line
+lines(theta,prior,lty=2) # plot prior as dashed line
+lines(theta,like,lty=3,lwd=4) # plot likelihood as dotted line
+# we assume a more informative prior
+a <- 2
+b <- 2
+# recalculate likelihood and posterior
+prior <- dbeta(theta,a,b)
+like <- (n + 1)*dbinom(y,n,theta)
+post <- dbeta(theta,y+a,n-y+b)
+# we plot the new values in red color
+lines(theta,post,col=2)
+lines(theta,prior,lty=2,col=2)
+```
+
+## Seeds germination rate
+```{R, warning=FALSE}
+# Read in data
+setwd("D:/ELsy/2020fall/EDA/4/Lab4instructdata")
+seed<-read.csv("seed.csv")
+head(seed)
+str(seed)
+# Set data for JAGS
+r<-seed$r
+n<-seed$n
+x1<-seed$x1
+x2<-seed$x2
+N<-nrow(seed)
+seed.jags<-list("r","n","x1","x2","N")
+# Set up the Bayes model
+bayes.mod <- function() {
+for(i in 1:N){
+r[i] ~ dbin(p[i], n[i])
+b[i] ~ dnorm(0.0,tau)
+logit(p[i]) <- alpha0 + alpha1 * x1[i] + alpha2 * x2[i]+
+alpha12*x1[i]*x2[i]+b[i]
+}
+alpha0 ~ dnorm(0.0,1.0E-6)
+alpha1 ~ dnorm(0.0,1.0E-6)
+alpha2 ~ dnorm(0.0,1.0E-6)
+alpha12 ~ dnorm(0.0,1.0E-6)
+tau ~ dgamma(0.001,0.001)
+sigma <- 1 / sqrt(tau)
+}
+
+#feed the model some initiation value so it can start the MCMC process
+#let JAGS assign the value
+bayes.mod.inits <- function(){
+list(alpha0=rnorm(1), alpha1=rnorm(1), alpha2=rnorm(1),
+alpha12=rnorm(1), tau=runif(1))
+}
+# Define the parameters whose posterior distributions you want to summarize
+bayes.mod.params <- c("alpha0", "alpha1", "alpha2","alpha12","sigma")
+set.seed(123)
+# Fit the model in JAGS
+bayes.mod.fit <- jags(data = seed.jags, inits = bayes.mod.inits,
+parameters.to.save = bayes.mod.params, n.chains = 2, n.iter = 9000,
+n.burnin = 1000, model.file = bayes.mod)
+
+# Update your model if necessary, e.g, if there is no convergence
+bayes.mod.fit.upd <- autojags(bayes.mod.fit)
+
+# Model results and diagnostics
+print(bayes.mod.fit)
+plot(bayes.mod.fit)
+```
+According to the graphs of midians and intervals, all the parameters fall into the 80% interval.
+
+
+```{R}
+# check for convergence
+traceplot(bayes.mod.fit)
+```
+As the traceplot result shows, for each parameter, the estimations come out from the 2 chains overlap with each other to some extent and looks resonable.
+But the range for each parameter is still large and we still need more diagnostics to define whether the model is convergent and when could it reach convergance.
+
+```{R}
+# Convert to an MCMC object for more diagnostic options
+bayes.mod.fit.mcmc <- as.mcmc(bayes.mod.fit)
+summary(bayes.mod.fit.mcmc)
+```
+
+```{r}
+# Diagnose convergence using superdiag
+superdiag(bayes.mod.fit.mcmc, burnin = 100)
+```
+Results from diagnostics:
+1. For Geweke diagnostic, the z-scores for the 2 parts(window) of the chain are less than 2, suggesting that the chains are convergent.
+2. For Gelman-Rubin diagnostic, the reduction factors for two chains are both close to 1 and less than 1.2 (Gelman 1995), suggesting that these two chains could be regard as convergent.
+3. For the Heidelberger-Welch diagnostic, the outcome results shows that in both chains, all parameters passed the stationarity test which also suggest that chains have reached convengence. Although alpha1 faied in halfwidth test, it might indicate that the accuracy of the estimate is relatively low (halfwidth of the confidence interval/mean > 0.1).
+4. For Raftery-Lewis diagnostic, it was assumed that the smallest sample size for Chain1 and chain2 to meet the specified accuracy is 3746 and 324827 respectively. 
+```{r}
+# Graphical diagnostics using mcmcplots
+denplot(bayes.mod.fit.mcmc)
+traplot(bayes.mod.fit.mcmc)
+mcmcplot(bayes.mod.fit.mcmc)
+```
+The figures from mcmcplots also show that the posterior distribution for the 2 chains is close to prior(normal) distribution, though the difference showed in plots for sigma seems to be bigger than the others.

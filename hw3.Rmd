@@ -1,0 +1,203 @@
+---
+title: "hw3"
+author: "Lsy"
+date: "2020/10/4"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r,setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(norm)
+library(mice)
+library(metafor)
+library(xlsx)
+#set function
+func_Hd <- function (CM, EM, CS, ES, CN, EN) { 
+  sp <- sqrt ((((CN - 1) * CS ^ 2) + ((EN - 1) * ES ^ 2)) / (CN + EN - 2)) 
+  d <- (EM - CM) / sp 
+  Hd <- d * (1 - (3 / (4 * (CN + EN - 2) - 1))) 
+  return (Hd) 
+}
+func_vHd <- function (Hd, CN, EN) {
+  vHd <- ((CN + EN) / (CN * EN)) + (Hd ^ 2 / (2 * (CN + EN - 2))) 
+  return (vHd)
+}
+
+setwd("D:/ELsy/2020fall/EDA/3/Lab3instruction")
+hwData1 <- read.xlsx ("jpe0051-1669-sd1.xlsx",sheetName = "meta-analysis78 articles")
+hwData2 <- read.xlsx ("jpe0051-1669-sd2.xlsx",sheetName = "meta-data 78",header = FALSE,startRow = 2)
+colnames(hwData2) <- hwData2[1,]
+hwdata <- hwData2 [-1,]
+```
+
+```{r,echo=FALSE, warning=FALSE}
+# clear NA & NaN in variance and effect size
+names(hwdata)[21] <-"efctsize"
+names(hwdata)[23] <-"var"
+chwdata <-subset(hwdata,!(hwdata["var"]=="NaN"))
+chwdata1 <-subset(chwdata,!(chwdata["efctsize"]=="NA"))
+hwdata <- subset(chwdata1,!(chwdata1["var"]=="NA"))
+hwdata[, "unvar"]<- as.numeric(hwdata[,"var"])
+hwdata[, "unefcts"]<- as.numeric(hwdata[,"efctsize"])
+hwdata[, "tsh"]<- as.numeric(hwdata[,"post.years"])
+hwdata[, "pro.ret"]<- as.numeric(hwdata[,"percent.retention"])
+hwdata[, "unitsz"]<- as.numeric(hwdata[,"size"])
+```
+
+
+
+```{r,warning=FALSE}
+# calculate mean effect size for different species richness and abundance
+# for amphibians
+amphibians <- subset(hwdata,taxon=="amphibians")
+amphibiansR <- subset(amphibians,biodiversity=="richness")
+ModelamphibianR <- rma(yi = unefcts, vi = unvar, method = "REML", data = amphibiansR)
+amphibiansA <- subset(amphibians,biodiversity=="abundance")
+ModelamphibianA <- rma(yi = unefcts, vi = unvar, method = "REML", data = amphibiansA)
+summary(ModelamphibianR)
+summary(ModelamphibianA)
+```
+#not sure why the I^2 here is 0.00?(So as to "beetles" etc.)
+
+```{R}
+# for birds
+birds <- subset(hwdata,taxon=="birds")
+birdsR <- subset(birds,biodiversity=="richness")
+ModelbirdR <- rma(yi = unefcts, vi = unvar, method = "REML", data = birdsR)
+birdsA <- subset(birds,biodiversity=="abundance")
+ModelbirdA <- rma(yi = unefcts, vi = unvar, method = "REML", data = birdsA)
+summary(ModelbirdR)
+summary(ModelbirdA)
+```
+```{R,warning=FALSE}
+# for beetles
+beetles <- subset(hwdata,taxon=="beetles")
+beetlesR <- subset(beetles,biodiversity=="richness")
+ModelbeetleR <- rma(yi = unefcts, vi = unvar, method = "REML", data = beetlesR)
+beetlesA <- subset(beetles,biodiversity=="abundance")
+ModelbeetleA <- rma(yi = unefcts, vi = unvar, method = "REML", data = beetlesA)
+summary(ModelbeetleR)
+summary(ModelbeetleA)
+```
+```{R,warning=FALSE}
+# for bryophytes
+bryophytes <- subset(hwdata,taxon=="bryophytes")
+bryophytesR <- subset(bryophytes,biodiversity=="richness")
+ModelbryophyteR <- rma(yi = unefcts, vi = unvar, method = "REML", data = bryophytesR)
+bryophytesA <- subset(bryophytes,biodiversity=="abundance")
+ModelbryophyteA <- rma(yi = unefcts, vi = unvar, method = "REML", data = bryophytesA)
+summary(ModelbryophyteR)
+summary(ModelbryophyteA)
+```
+```{R,warning=FALSE}
+# for fungi
+fungi <- subset(hwdata,taxon=="fungi")
+fungiR <- subset(fungi,biodiversity=="richness")
+ModelfungiR <- rma(yi = unefcts, vi = unvar, method = "REML", data = fungiR)
+fungiA <- subset(fungi,biodiversity=="abundance")
+ModelfungiA <- rma(yi = unefcts, vi = unvar, method = "REML", data = fungiA)
+summary(ModelfungiR)
+summary(ModelfungiA)
+```
+```{R,warning=FALSE}
+# for invertebrates
+invertebrates <- subset(hwdata,taxon=="invertebrates")
+invertebratesR <- subset(invertebrates,biodiversity=="richness")
+ModelinvertebratesR <- rma(yi = unefcts, vi = unvar, method = "REML", data = invertebratesR)
+invertebratesA <- subset(invertebrates,biodiversity=="abundance")
+ModelinvertebratesA <- rma(yi = unefcts, vi = unvar, method = "REML", data = invertebratesA)
+summary(ModelinvertebratesR)
+summary(ModelinvertebratesA)
+```
+```{R,warning=FALSE}
+# for lichens
+lichens <- subset(hwdata,taxon=="lichens")
+lichensR <- subset(lichens,biodiversity=="richness")
+ModellichenR <- rma(yi = unefcts, vi = unvar, method = "REML", data = lichensR)
+lichensA <- subset(lichens,biodiversity=="abundance")
+ModellichenA <- rma(yi = unefcts, vi = unvar, method = "REML", data = lichensA)
+summary(ModellichenR)
+summary(ModellichenA)
+```
+```{R,warning=FALSE}
+# for mammals
+mammals <- subset(hwdata,taxon=="mammals")
+mammalsR <- subset(mammals,biodiversity=="richness")
+ModelmammalR <- rma(yi = unefcts, vi = unvar, method = "REML", data = mammalsR)
+mammalsA <- subset(mammals,biodiversity=="abundance")
+ModelmammalA <- rma(yi = unefcts, vi = unvar, method = "REML", data = mammalsA)
+summary(ModelmammalR)
+summary(ModelmammalA)
+```
+```{R}
+# for plants
+plants <- subset(hwdata,taxon=="plants")
+plantsR <- subset(plants,biodiversity=="richness")
+ModelplantR <- rma(yi = unefcts, vi = unvar, method = "REML", data = plantsR)
+plantsA <- subset(plants,biodiversity=="abundance")
+ModelplantA <- rma(yi = unefcts, vi = unvar, method = "REML", data = plantsA)
+summary(ModelplantR)
+summary(ModelplantA)
+```
+
+```{R}
+# for spiders
+spiders <- subset(hwdata,taxon=="spiders")
+spidersR <- subset(spiders,biodiversity=="richness")
+ModelspiderR <- rma(yi = unefcts, vi = unvar, method = "REML", data = spidersR)
+spidersA <- subset(spiders,biodiversity=="abundance")
+ModelspiderA <- rma(yi = unefcts, vi = unvar, method = "REML", data = spidersA)
+summary(ModelspiderR)
+summary(ModelspiderA)
+```
+
+```{R}
+# for reptiles
+reptiles <- subset(hwdata,taxon=="reptiles")
+reptilesR <- subset(reptiles,biodiversity=="richness")
+ModelreptileR <- rma(yi = unefcts, vi = unvar, method = "REML", data = reptilesR)
+reptilesA <- subset(reptiles,biodiversity=="abundance")
+ModelreptileA <- rma(yi = unefcts, vi = unvar, method = "REML", data = reptilesA)
+summary(ModelreptileR)
+summary(ModelreptileA)
+```
+```{R,warning=FALSE}
+# meta-regression for examine influence of moderators
+#for forest biome
+Modelbiome1 <- rma (yi = unefcts, vi = unvar, mods = ~ temperate.boreal, method = "REML", data = hwdata) 
+summary (Modelbiome1)
+Modelbiome2 <- rma (yi = unefcts, vi = unvar, mods = ~ temperate.boreal-1, method = "REML", data = hwdata) 
+summary (Modelbiome2)
+```
+```{R,warning=FALSE}
+#for time since harvest
+Modelposty <- rma (yi = unefcts, vi = unvar, mods = ~ tsh, method = "REML", data = hwdata) 
+summary (Modelposty)
+Modelposty2 <- rma (yi = unefcts, vi = unvar, mods = ~ tsh -1, method = "REML", data = hwdata) 
+summary (Modelposty2)
+```
+
+```{R,warning=FALSE}
+#for proportion of retention
+Modelpro.ret <- rma (yi = unefcts, vi = unvar, mods = ~ pro.ret, method = "REML", data = hwdata) 
+summary (Modelpro.ret)
+Modelpro.ret2 <- rma (yi = unefcts, vi = unvar, mods = ~ pro.ret -1, method = "REML", data = hwdata) 
+summary (Modelpro.ret2)
+
+#mix all the variables
+Modelmix <- rma (yi = unefcts, vi = unvar, mods = ~ pro.ret + unitsz + tsh + temperate.boreal, method = "REML", data = hwdata) 
+summary (Modelmix)
+Modelmix2 <- rma (yi = unefcts, vi = unvar, mods = ~ pro.ret + unitsz + tsh + temperate.boreal - 1, method = "REML", data = hwdata) 
+summary (Modelmix2)
+```
+The effect size is sinificantly influenced by unit size and forest biome (samples from boreal biome estimate larger than that from temperate biome).
+```{R,warning=FALSE}
+#test publication bias
+regtest(Modelmix,model = "lm")
+ranktest(Modelmix)
+```
+There is not significant asymetry.
+
+According to the results above, the effect size is mostly influenced by unit size and forest biome (samples from boreal biome estimate larger than that from temperate biome).

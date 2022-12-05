@@ -1,0 +1,70 @@
+---
+title: "HW5"
+author: "Lsy"
+date: "2020/10/16"
+output: word_document
+---
+PdoData1完成以下分析：
+
+2）自己寻找一个支持EMB方法的R包，用EMB的方法重复实验指南中的II部分，比较和用MCMC方法得到的结果的差异。
+**只需提交代码和简短分析（图表外字数不超过300字）**
+
+```{r, warning=FALSE}
+library (mvnmle)
+library (psych) 
+library (mi)
+library (mice) 
+library (lme4) 
+library (pan) 
+library (mitools) 
+library(Hmisc)
+
+hwdata <- read.csv ("PdoData1.csv")
+missmap (hwdata) 
+```
+
+```{R}
+#  using multiple imputation
+mulimput <- mice (hwdata, m = 5, seed = 444, print=F) 
+mulfit <- with (mulimput, glm (Tarsus ~ Age + Fledgling, family = quasipoisson)) 
+mulpooling <- pool (mulfit) 
+summary (mulpooling)
+```
+
+```{R}
+# complete case analysis
+sub <- which (complete.cases (hwdata) == TRUE)
+completefit <- glm (Tarsus ~ Age + Fledgling, family = quasipoisson, subset = sub, data = hwdata) 
+summary (completefit) 
+confint (completefit)
+```
+
+```{R}
+# impute with mean
+meanimputation <- hwdata
+meanimputation$Age <- impute(hwdata$Age, mean)
+meanimputation$EPP <- impute(hwdata$Epp, mean)
+meanimputation$Fledgling <- impute(hwdata$Fledgling, mean)
+meanimputation$Tarsus <- impute(hwdata$Tarsus, mean)
+meanimputation$Wing <- impute(hwdata$Wing, mean)
+meanimputation$Weight <- impute(hwdata$Weight, mean)
+meanimputation$Heterozygosity <- impute(hwdata$Heterozygosity, mean)
+meanimputation$Badge <- impute(hwdata$Badge, mean)
+meanimputefit <- glm (Tarsus ~ Age + Fledgling, family = quasipoisson, data = meanimputation) 
+summary(meanimputefit)
+```
+From the summaries above, the fitting results of these three different imputation methods seem similar: the estimate coefficient for Age ranges from -0.002~-0.006 and Fledgling is around -0.002. Neither of the coefficiaents of the 3 fitting result is significant.
+
+Then use EMB method (use package Amelia)  to reproduce partII.
+```{R}
+library (Amelia) 
+embimput <- amelia(hwdata, boot.type = "ordinary")
+embfit1 <- glm (Tarsus ~ Age + Fledgling, family = quasipoisson, data = embimput$imputations$imp1) 
+summary(embfit1)
+embfit2 <- glm (Tarsus ~ Age + Fledgling, family = quasipoisson, data = embimput$imputations$imp2) 
+summary(embfit2)
+
+embfit3 <- glm (Tarsus ~ Age + Fledgling, family = quasipoisson, data = embimput$imputations$imp3) 
+summary(embfit3)
+```
+Cannot output...
